@@ -1,0 +1,1 @@
+/usr/sbin/cc CMakeFiles/reversi.dir/mapio.c.o CMakeFiles/reversi.dir/mapmanager.c.o CMakeFiles/reversi.dir/reversi.c.o CMakeFiles/reversi.dir/tools.c.o -o reversi 

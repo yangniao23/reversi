@@ -1,0 +1,3 @@
+/home/ksmt/git/proexam/reversi/build/CMakeFiles/reversi.dir
+/home/ksmt/git/proexam/reversi/build/CMakeFiles/edit_cache.dir
+/home/ksmt/git/proexam/reversi/build/CMakeFiles/rebuild_cache.dir
