@@ -1,75 +1,80 @@
 #include "mapio.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "mapmanager.h"
 #include "tools.h"
 
-Directionlist *input_move(Validcoord *validcoords, int *x, int *y) {
-    Validcoord *entry = NULL;
-    char buf[BUFSIZE];
-    char *endptr, *p;
-
-    while (1) {
-        printf("Please input coordinates: ");
-        if (fgets(buf, sizeof(buf), stdin) == NULL) {
-            fprintf(stderr, "fgets() failed.\n");
-            return NULL;
-        }
-
-        *y = strtol(strtok(buf, " "), &endptr, 10) - 1;
-        if (endptr == buf) {
-            fprintf(stderr, "Invalid input.\n");
-            continue;
-        }
-        if (*y < 0 || *y >= YSIZE) {
-            fprintf(stderr, "Out of range.\n");
-            continue;
-        }
-
-        p = strtok(NULL, "\0");
-        if (p == NULL) {
-            fprintf(stderr, "Invalid input.\n");
-            continue;
-        }
-
-        if ('A' <= p[0] && p[0] <= 'A' + XSIZE) {
-            *x = p[0] - 'A';
-        } else if ('a' <= p[0] && p[0] <= 'a' + XSIZE) {
-            *x = p[0] - 'a';
-        } else {
-            fprintf(stderr, "Out of range.\n");
-            continue;
-        }
-
-        entry = search_validcoord(validcoords, *y, *x);
-        if (entry != NULL)
-            break;
-        else
-            fprintf(stderr, "Cannot put here.\n");
+static int parse_columncoord(const char *str) {
+    if (str == NULL) return -1;
+    if ('A' <= str[0] && str[0] <= 'A' + XSIZE) {
+        return str[0] - 'A';
+    } else if ('a' <= str[0] && str[0] <= 'a' + XSIZE) {
+        return str[0] - 'a';
     }
-    return entry->directionlist;
+    return 1;
 }
 
-int input_coord(char map[YSIZE][XSIZE], int *x, int *y) {
-    char buf[BUFSIZE];
-    char *endptr, *p;
+static int parse_cmd(const char *str, char map[YSIZE][XSIZE], Flags *flags) {
+    char buf[BUFSIZE], *p;
+    size_t last;
 
-    x = -1;
-    y = -1;
+    last = strlen(str) - 1;
+    memcpy(buf, str, last + 1);
+    if (last >= 0 && buf[last] == '\n') {
+        if (strtok(buf, " ")) p = strtok(NULL, "\n");
+        if (p == NULL) return -1;
+    }
+
+    if (str[0] == ':') {
+        switch (str[1]) {
+            case 's':
+                flags->skip_flag = true;
+                return -1;
+
+            case 'r':
+                if (read_map_file(p, map) != 0) {
+                    fprintf(stderr, "read_map_file() failed.\n");
+                    return 1;
+                };
+                dump_map(map);
+                flags->reset_flag = true;
+                return -1;
+
+            case 'w':
+                write_map_file(p, map);
+                if (str[2] != 'q') return 1;
+
+            case 'q':
+                flags->quit_flag = true;
+                return -1;
+        }
+        return -1;
+    }
+    return 0;
+}
+
+Directionlist *input_move(char map[YSIZE][XSIZE], Validcoord *validcoords,
+                          int *x, int *y, Flags *flags) {
+    Validcoord *entry = NULL;
+    char buf[BUFSIZE];
+    char *endptr;
+
     while (1) {
         int res;
         printf("input coords: ");
         if (fgets(buf, sizeof(buf), stdin) == NULL) {
             fprintf(stderr, "fgets() failed.\n");
-            return -1;
+            return NULL;
         }
-        res = parse_cmd(buf, map);
+        res = parse_cmd(buf, map, flags);
         if (res == 1)
             continue;
         else if (res == -1)
-            return -1;
+            return NULL;
 
         *y = strtol(strtok(buf, " "), &endptr, 10) - 1;
         if (endptr == buf) {
@@ -84,38 +89,18 @@ int input_coord(char map[YSIZE][XSIZE], int *x, int *y) {
         if (*x == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
+        } else if (*x == 1) {
+            fprintf(stderr, "Out of range.\n");
+            continue;
         }
-        break;
-    }
-    return 0;
-}
 
-int parse_columncoord(const char *str) {
-    if (str == NULL) return -1;
-    if ('A' <= str[0] && str[0] <= 'A' + XSIZE) {
-        return str[0] - 'A';
-    } else if ('a' <= str[0] && str[0] <= 'a' + XSIZE) {
-        return str[0] - 'a';
+        entry = search_validcoord(validcoords, *y, *x);
+        if (entry != NULL)
+            break;
+        else
+            fprintf(stderr, "Cannot put here.\n");
     }
-    return -1;
-}
-
-int parse_cmd(const char *str, char map[YSIZE][XSIZE]) {
-    if (str[0] == ':') {
-        switch (str[1]) {
-            case 'r':
-                read_map_file(str + 2, map);
-                dump_map(map);
-                return 1;
-            case 'w':
-                write_map_file(str + 3, map);
-                if (str[2] != 'q') return 1;
-            case 'q':
-                return -1;
-        }
-        return -1;
-    }
-    return 0;
+    return entry->directionlist;
 }
 
 void dump_map(char map[YSIZE][XSIZE]) {
@@ -154,7 +139,7 @@ int read_map_file(const char *fname, char map[YSIZE][XSIZE]) {
     for (int y = 0; y < YSIZE; y++) {
         fgets(buf, sizeof(buf), fp);
         map[y][0] = atoi(strtok(buf, ","));
-        for (int x = 0; x < XSIZE; x++) {
+        for (int x = 1; x < XSIZE; x++) {
             map[y][x] = atoi(strtok(NULL, ","));
         }
     }

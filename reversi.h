@@ -6,6 +6,7 @@
 #define WHITE -1
 #define BLACK 1
 
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef struct directionlist {
@@ -23,4 +24,9 @@ typedef struct validcoord {
     Directionlist *directionlist;
 } Validcoord;
 
+extern Validcoord *append_validcoord(Validcoord *validcoord, int y, int x,
+                                     Directionlist *p);
 extern Validcoord *search_validcoord(Validcoord *validcoord, int y, int x);
+extern void destroy_validcoord(Validcoord *validcoord);
+extern int find_validcoords(const char map[YSIZE][XSIZE],
+                            Validcoord *validcoords, int mode, bool *flag);

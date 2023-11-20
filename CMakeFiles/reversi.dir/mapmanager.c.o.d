@@ -35,6 +35,7 @@ CMakeFiles/reversi.dir/mapmanager.c.o: \
  /usr/include/bits/stdlib-float.h /usr/include/string.h \
  /usr/include/bits/types/locale_t.h /usr/include/bits/types/__locale_t.h \
  /usr/include/strings.h /home/ksmt/git/proexam/reversi/mapio.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/13.2.1/include/stdbool.h \
  /home/ksmt/git/proexam/reversi/tools.h \
  /usr/lib/gcc/x86_64-pc-linux-gnu/13.2.1/include/stdint.h \
  /usr/include/stdint.h /usr/include/bits/wchar.h \

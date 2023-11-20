@@ -1,16 +1,16 @@
 #include "reversi.h"
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mapio.h"
+#include "mapmanager.h"
 #include "tools.h"
 
-static Validcoord *append_validcoord(Validcoord *validcoord, int y, int x,
-                                     Directionlist *p) {
+Validcoord *append_validcoord(Validcoord *validcoord, int y, int x,
+                              Directionlist *p) {
     uint8_t data[2 * sizeof(int) + sizeof(Directionlist *)];
 
     memcpy(data, &y, sizeof(int));
@@ -66,21 +66,26 @@ static void update_map(char map[YSIZE][XSIZE], Directionlist *directions, int y,
     dump_map(map);
 }
 
-static int make_move(char map[YSIZE][XSIZE], bool *flag, int mode) {
-    Validcoord *validcoords = NULL;
-    Directionlist *directions = NULL;
-    int x, y;
-
+int find_validcoords(const char map[YSIZE][XSIZE], Validcoord *validcoords,
+                     int mode, bool *flag) {
     for (int i = 0; i < YSIZE; i++) {
         for (int j = 0; j < XSIZE; j++) {
             Directionlist *p = check(map, i, j, mode);
             if (p != NULL) {
                 validcoords = append_validcoord(validcoords, i, j, p);
-                *flag = true;
+                if (flag != NULL) *flag = true;
             }
         }
     }
+}
 
+static int make_move(char map[YSIZE][XSIZE], bool *flag, int mode) {
+    Validcoord *validcoords = NULL;
+    Directionlist *directions = NULL;
+    int x, y;
+    Flags input_flags = {false};
+
+    find_validcoords(map, validcoords, mode, flag);
     if (validcoords == NULL) {
         if (*flag) {
             printf("pass\n");
@@ -97,10 +102,23 @@ static int make_move(char map[YSIZE][XSIZE], bool *flag, int mode) {
     } else {
         printf("WHITE turn\n");
     }
-    directions = input_move(validcoords, &x, &y);
+    directions = input_move(map, validcoords, &x, &y, &input_flags);
     if (directions == NULL) {
-        fprintf(stderr, "input_move() failed.\n");
-        return -1;
+        if (input_flags.reset_flag) {
+            input_flags.reset_flag = false;
+            return make_move(map, flag, mode);
+        }
+        if (input_flags.skip_flag) {
+            input_flags.skip_flag = false;
+            return 0;
+        }
+        if (input_flags.quit_flag) {
+            input_flags.quit_flag = false;
+            return 1;
+        } else {
+            fprintf(stderr, "input_move() failed.\n");
+            return -1;
+        }
     }
     update_map(map, directions, y, x, mode);
     destroy_validcoord(validcoords);
@@ -129,18 +147,21 @@ int main(int argc, const char *argv[]) {
     int winner;
 
     init(map);
-    while (flag) {
+    while (1) {
         int res = make_move(map, &flag, BLACK);
         if (res == -1) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
-        } else if (flag == false && res == 1) {
+        } else if (res == 1) {
             break;
         }
 
-        if (make_move(map, &flag, WHITE) == -1) {
+        res = make_move(map, &flag, WHITE);
+        if (res == -1) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
+        } else if (res == 1) {
+            break;
         }
     }
 

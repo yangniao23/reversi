@@ -69,10 +69,24 @@ include CMakeFiles/reversi.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/reversi.dir/flags.make
 
+CMakeFiles/reversi.dir/cpu.c.o: CMakeFiles/reversi.dir/flags.make
+CMakeFiles/reversi.dir/cpu.c.o: /home/ksmt/git/proexam/reversi/cpu.c
+CMakeFiles/reversi.dir/cpu.c.o: CMakeFiles/reversi.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/reversi.dir/cpu.c.o"
+	/usr/sbin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/reversi.dir/cpu.c.o -MF CMakeFiles/reversi.dir/cpu.c.o.d -o CMakeFiles/reversi.dir/cpu.c.o -c /home/ksmt/git/proexam/reversi/cpu.c
+
+CMakeFiles/reversi.dir/cpu.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/reversi.dir/cpu.c.i"
+	/usr/sbin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/ksmt/git/proexam/reversi/cpu.c > CMakeFiles/reversi.dir/cpu.c.i
+
+CMakeFiles/reversi.dir/cpu.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/reversi.dir/cpu.c.s"
+	/usr/sbin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/ksmt/git/proexam/reversi/cpu.c -o CMakeFiles/reversi.dir/cpu.c.s
+
 CMakeFiles/reversi.dir/mapio.c.o: CMakeFiles/reversi.dir/flags.make
 CMakeFiles/reversi.dir/mapio.c.o: /home/ksmt/git/proexam/reversi/mapio.c
 CMakeFiles/reversi.dir/mapio.c.o: CMakeFiles/reversi.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/reversi.dir/mapio.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/reversi.dir/mapio.c.o"
 	/usr/sbin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/reversi.dir/mapio.c.o -MF CMakeFiles/reversi.dir/mapio.c.o.d -o CMakeFiles/reversi.dir/mapio.c.o -c /home/ksmt/git/proexam/reversi/mapio.c
 
 CMakeFiles/reversi.dir/mapio.c.i: cmake_force
@@ -86,7 +100,7 @@ CMakeFiles/reversi.dir/mapio.c.s: cmake_force
 CMakeFiles/reversi.dir/mapmanager.c.o: CMakeFiles/reversi.dir/flags.make
 CMakeFiles/reversi.dir/mapmanager.c.o: /home/ksmt/git/proexam/reversi/mapmanager.c
 CMakeFiles/reversi.dir/mapmanager.c.o: CMakeFiles/reversi.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/reversi.dir/mapmanager.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/reversi.dir/mapmanager.c.o"
 	/usr/sbin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/reversi.dir/mapmanager.c.o -MF CMakeFiles/reversi.dir/mapmanager.c.o.d -o CMakeFiles/reversi.dir/mapmanager.c.o -c /home/ksmt/git/proexam/reversi/mapmanager.c
 
 CMakeFiles/reversi.dir/mapmanager.c.i: cmake_force
@@ -100,7 +114,7 @@ CMakeFiles/reversi.dir/mapmanager.c.s: cmake_force
 CMakeFiles/reversi.dir/reversi.c.o: CMakeFiles/reversi.dir/flags.make
 CMakeFiles/reversi.dir/reversi.c.o: /home/ksmt/git/proexam/reversi/reversi.c
 CMakeFiles/reversi.dir/reversi.c.o: CMakeFiles/reversi.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/reversi.dir/reversi.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/reversi.dir/reversi.c.o"
 	/usr/sbin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/reversi.dir/reversi.c.o -MF CMakeFiles/reversi.dir/reversi.c.o.d -o CMakeFiles/reversi.dir/reversi.c.o -c /home/ksmt/git/proexam/reversi/reversi.c
 
 CMakeFiles/reversi.dir/reversi.c.i: cmake_force
@@ -114,7 +128,7 @@ CMakeFiles/reversi.dir/reversi.c.s: cmake_force
 CMakeFiles/reversi.dir/tools.c.o: CMakeFiles/reversi.dir/flags.make
 CMakeFiles/reversi.dir/tools.c.o: /home/ksmt/git/proexam/reversi/tools.c
 CMakeFiles/reversi.dir/tools.c.o: CMakeFiles/reversi.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/reversi.dir/tools.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object CMakeFiles/reversi.dir/tools.c.o"
 	/usr/sbin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/reversi.dir/tools.c.o -MF CMakeFiles/reversi.dir/tools.c.o.d -o CMakeFiles/reversi.dir/tools.c.o -c /home/ksmt/git/proexam/reversi/tools.c
 
 CMakeFiles/reversi.dir/tools.c.i: cmake_force
@@ -127,6 +141,7 @@ CMakeFiles/reversi.dir/tools.c.s: cmake_force
 
 # Object files for target reversi
 reversi_OBJECTS = \
+"CMakeFiles/reversi.dir/cpu.c.o" \
 "CMakeFiles/reversi.dir/mapio.c.o" \
 "CMakeFiles/reversi.dir/mapmanager.c.o" \
 "CMakeFiles/reversi.dir/reversi.c.o" \
@@ -135,13 +150,14 @@ reversi_OBJECTS = \
 # External object files for target reversi
 reversi_EXTERNAL_OBJECTS =
 
+reversi: CMakeFiles/reversi.dir/cpu.c.o
 reversi: CMakeFiles/reversi.dir/mapio.c.o
 reversi: CMakeFiles/reversi.dir/mapmanager.c.o
 reversi: CMakeFiles/reversi.dir/reversi.c.o
 reversi: CMakeFiles/reversi.dir/tools.c.o
 reversi: CMakeFiles/reversi.dir/build.make
 reversi: CMakeFiles/reversi.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking C executable reversi"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/ksmt/git/proexam/reversi/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking C executable reversi"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/reversi.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

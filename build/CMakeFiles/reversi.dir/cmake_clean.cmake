@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/reversi.dir/cpu.c.o"
+  "CMakeFiles/reversi.dir/cpu.c.o.d"
   "CMakeFiles/reversi.dir/mapio.c.o"
   "CMakeFiles/reversi.dir/mapio.c.o.d"
   "CMakeFiles/reversi.dir/mapmanager.c.o"

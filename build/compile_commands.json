@@ -1,6 +1,12 @@
 [
 {
   "directory": "/home/ksmt/git/proexam/reversi/build",
+  "command": "/usr/sbin/gcc   -g -Wall -O0 -g -o CMakeFiles/reversi.dir/cpu.c.o -c /home/ksmt/git/proexam/reversi/cpu.c",
+  "file": "/home/ksmt/git/proexam/reversi/cpu.c",
+  "output": "CMakeFiles/reversi.dir/cpu.c.o"
+},
+{
+  "directory": "/home/ksmt/git/proexam/reversi/build",
   "command": "/usr/sbin/gcc   -g -Wall -O0 -g -o CMakeFiles/reversi.dir/mapio.c.o -c /home/ksmt/git/proexam/reversi/mapio.c",
   "file": "/home/ksmt/git/proexam/reversi/mapio.c",
   "output": "CMakeFiles/reversi.dir/mapio.c.o"

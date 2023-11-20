@@ -129,6 +129,30 @@ reversi/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/build
 .PHONY : reversi/fast
 
+cpu.o: cpu.c.o
+.PHONY : cpu.o
+
+# target to build an object file
+cpu.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/cpu.c.o
+.PHONY : cpu.c.o
+
+cpu.i: cpu.c.i
+.PHONY : cpu.i
+
+# target to preprocess a source file
+cpu.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/cpu.c.i
+.PHONY : cpu.c.i
+
+cpu.s: cpu.c.s
+.PHONY : cpu.s
+
+# target to generate assembly for a file
+cpu.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/cpu.c.s
+.PHONY : cpu.c.s
+
 mapio.o: mapio.c.o
 .PHONY : mapio.o
 
@@ -234,6 +258,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... reversi"
+	@echo "... cpu.o"
+	@echo "... cpu.i"
+	@echo "... cpu.s"
 	@echo "... mapio.o"
 	@echo "... mapio.i"
 	@echo "... mapio.s"
