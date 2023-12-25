@@ -8,10 +8,11 @@
 #include "tools.h"
 
 #define LEFT_SHIFT(x, y) ((y > 0) ? (x << y) : (x >> -y))
+#define RIGHT_SHIFT(x, y) ((y > 0) ? (x >> y) : (x << -y))
 #define CURRENT_MODE_BOARD(board) \
-    ((board->mode == WHITE) ? board->white : board->black)
+    *((board->mode == WHITE) ? &(board->white) : &(board->black))
 #define OPPOSITE_MODE_BOARD(board) \
-    ((board->mode == WHITE) ? board->black : board->white)
+    *((board->mode == WHITE) ? &(board->black) : &(board->white))
 
 uint64_t coord_to_bit(int y, int x) {
     uint64_t bit = 1;
@@ -19,7 +20,7 @@ uint64_t coord_to_bit(int y, int x) {
     return bit;
 }
 
-static Validcoords *get_validcoords(Board *board) {
+Validcoords *get_validcoords(Board *board) {
     int directions[8] = {1,         -1,         XSIZE,     -XSIZE,
                          XSIZE + 1, -XSIZE - 1, XSIZE - 1, -XSIZE + 1};
     uint64_t hsentinel = 0x7e7e7e7e7e7e7e7e;
@@ -30,6 +31,9 @@ static Validcoords *get_validcoords(Board *board) {
     uint64_t blank = ~(board->white | board->black);
     Validcoords *validcoords = malloc(sizeof(Validcoords));
 
+    validcoords->coords = 0;
+    for (size_t i = 0; i < 8; i++) validcoords->reverse_stones[i] = 0;
+
     for (size_t i = 0; i < 8; i++) {
         // 返せる可能性がある石だけを取り出す
         uint64_t mask = OPPOSITE_MODE_BOARD(board) & sentinels[i];
@@ -37,34 +41,22 @@ static Validcoords *get_validcoords(Board *board) {
         uint64_t tmp =
             mask & LEFT_SHIFT(CURRENT_MODE_BOARD(board), directions[i]);
 
-        if (tmp == 0) continue;
+        if (tmp == 0) {
+            validcoords->reverse_stones[i] = 0;
+            continue;
+        }
 
         for (size_t j = 0; j < XSIZE - 3; j++) {
             // 返し続ける
             tmp |= mask & LEFT_SHIFT(tmp, directions[i]);
         }
         validcoords->reverse_stones[i] = tmp;
+        // dump_coords(blank & LEFT_SHIFT(tmp, directions[i]));
 
         validcoords->coords |= blank & LEFT_SHIFT(tmp, directions[i]);
     }
 
     return validcoords;
-}
-
-bool is_validcoord(Board *board, uint64_t put) {
-    uint64_t validcoords = make_validcoords(board);
-
-    return (validcoords & put) == put;
-}
-
-uint64_t reverse_stones(Board *board, Validcoords *validcoords, uint64_t put) {
-    uint64_t reverse = get_reversed_stones(validcoords, put);
-
-    CURRENT_MODE_BOARD(board) ^= put | reverse;
-    OPPOSITE_MODE_BOARD(board) ^= reverse;
-
-    free(validcoords);
-    return reverse;
 }
 
 static uint64_t get_reversed_stones(Validcoords *validcoords, uint64_t put) {
@@ -77,7 +69,6 @@ static uint64_t get_reversed_stones(Validcoords *validcoords, uint64_t put) {
     for (size_t i = 0; i < 8; i++) {
         uint64_t tmp =
             validcoords->reverse_stones[i] & RIGHT_SHIFT(put, directions[i]);
-        dump_coords(tmp);
         for (size_t j = 0; j < XSIZE - 3; j++) {
             tmp |= validcoords->reverse_stones[i] &
                    RIGHT_SHIFT(tmp, directions[i]);
@@ -85,5 +76,15 @@ static uint64_t get_reversed_stones(Validcoords *validcoords, uint64_t put) {
         reverse |= tmp;
     }
 
+    return reverse;
+}
+
+uint64_t reverse_stones(Board *board, Validcoords *validcoords, uint64_t put) {
+    uint64_t reverse = get_reversed_stones(validcoords, put);
+
+    CURRENT_MODE_BOARD(board) ^= put | reverse;
+    OPPOSITE_MODE_BOARD(board) ^= reverse;
+
+    free(validcoords);
     return reverse;
 }

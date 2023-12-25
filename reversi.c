@@ -9,75 +9,22 @@
 #include "mapmanager.h"
 #include "tools.h"
 
-Validcoord *append_validcoord(Validcoord *validcoord, int y, int x,
-                              Directionlist *p) {
-    uint8_t data[2 * sizeof(int) + sizeof(Directionlist *)];
-
-    memcpy(data, &y, sizeof(int));
-    memcpy(data + sizeof(int), &x, sizeof(int));
-    memcpy(data + 2 * sizeof(int), &p, sizeof(Directionlist *));
-
-    return (Validcoord *)append_node((Node *)validcoord, data, sizeof(data));
-}
-
-Validcoord *search_validcoord(Validcoord *validcoord, int y, int x) {
-    uint8_t data[2 * sizeof(int)];
-
-    memcpy(data, &y, sizeof(int));
-    memcpy(data + sizeof(int), &x, sizeof(int));
-
-    return (Validcoord *)search_node((Node *)validcoord, data, 2 * sizeof(int));
-}
-
-void destroy_validcoord(Validcoord *validcoord) {
-    Validcoord *next;
-    while (validcoord != NULL) {
-        next = validcoord->next;
-        destroy_node((Node *)validcoord->directionlist);
-        free(validcoord);
-        validcoord = next;
-    }
-}
-
 static void init(Board *board) {
-    memset(board, 0, sizeof(Board));
     board->mode = BLACK;
     board->black = 0x0000000810000000;
     board->white = 0x0000001008000000;
 }
 
-static void update_map(char map[YSIZE][XSIZE], Directionlist *directions, int y,
-                       int x, int mode) {
-    for (Directionlist *entry = directions; entry != NULL;
-         entry = entry->next) {
-        int direction = entry->direction;
-        int num = entry->num;
-        for (int i = 0; i <= num; i++) {
-            map[y + sy[direction] * i][x + sx[direction] * i] = mode;
-        }
-    }
-    dump_map(map);
-}
-
-int find_validcoords(const char map[YSIZE][XSIZE], Validcoord *validcoords,
-                     int mode, bool *flag) {
-    for (int i = 0; i < YSIZE; i++) {
-        for (int j = 0; j < XSIZE; j++) {
-            Directionlist *p = check(map, i, j, mode);
-            if (p != NULL) {
-                validcoords = append_validcoord(validcoords, i, j, p);
-                if (flag != NULL) *flag = true;
-            }
-        }
-    }
-}
-
 static int make_move(Board *board, bool *flag) {
-    int x, y;
     Flags input_flags = {false};
+    Validcoords *validcoords;
+    uint64_t put;
 
-    find_validcoords(map, validcoords, mode, flag);
-    if (validcoords == NULL) {
+    dump_bitmap(board);
+
+    validcoords = get_validcoords(board);
+    if (validcoords->coords == 0) {
+        free(validcoords);
         if (*flag) {
             printf("pass\n");
             *flag = false;
@@ -87,17 +34,13 @@ static int make_move(Board *board, bool *flag) {
             return 1;
         }
     }
-
-    if (mode == BLACK) {
-        printf("BLACK turn\n");
-    } else {
-        printf("WHITE turn\n");
-    }
-    directions = input_move(map, validcoords, &x, &y, &input_flags);
-    if (directions == NULL) {
+    dump_coords(validcoords->coords);
+    printf("%s turn\n", board->mode == BLACK ? "BLACK" : "WHITE");
+    put = input_move(board, validcoords, &input_flags);
+    if (put == 0) {
         if (input_flags.reset_flag) {
             input_flags.reset_flag = false;
-            return make_move(map, flag, mode);
+            return make_move(board, flag);
         }
         if (input_flags.skip_flag) {
             input_flags.skip_flag = false;
@@ -111,24 +54,32 @@ static int make_move(Board *board, bool *flag) {
             return -1;
         }
     }
-    update_map(map, directions, y, x, mode);
-    destroy_validcoord(validcoords);
+    reverse_stones(board, validcoords, put);
+    // free(validcoords); reverse_stones()内でfreeされる
     return 0;
 }
 
-int check_winner(char map[YSIZE][XSIZE]) {
-    int cnt;
-    for (int y = 0; y < YSIZE; y++) {
-        for (int x = 0; x < XSIZE; x++) {
-            cnt += map[y][x];
-        }
+static int popcount(uint64_t bit) {
+    int count = 0;
+    while (bit != 0) {
+        bit &= bit - 1;
+        count++;
     }
-    if (cnt > 0) {
-        return BLACK;
-    } else if (cnt < 0) {
-        return WHITE;
+    return count;
+}
+
+static void show_winner(Board *board) {
+    int black = popcount(board->black);
+    int white = popcount(board->white);
+
+    printf("BLACK: %d\n", black);
+    printf("WHITE: %d\n", white);
+    if (black > white) {
+        printf("BLACK WIN\n");
+    } else if (black < white) {
+        printf("WHITE WIN\n");
     } else {
-        return 0;
+        printf("DRAW\n");
     }
 }
 
@@ -159,12 +110,5 @@ int main(int argc, const char *argv[]) {
         board.mode *= -1;
     }
 
-    winner = check_winner(&board);
-    if (winner == BLACK) {
-        printf("BLACK WIN\n");
-    } else if (winner == WHITE) {
-        printf("WHITE WIN\n");
-    } else {
-        printf("DRAW\n");
-    }
+    show_winner(&board);
 }

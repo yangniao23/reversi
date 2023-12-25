@@ -9,9 +9,9 @@ typedef struct {
     bool quit_flag;
 } Flags;
 
-extern Directionlist *input_move(char map[YSIZE][XSIZE],
-                                 Validcoord *validcoords, int *x, int *y,
-                                 Flags *flags);
-extern void dump_map(char map[YSIZE][XSIZE]);
-extern int read_map_file(const char *fname, char map[YSIZE][XSIZE]);
-extern int write_map_file(const char *fname, char map[YSIZE][XSIZE]);
+extern uint64_t input_move(Board *board, Validcoords *validcoords,
+                           Flags *flags);
+extern void dump_bitmap(Board *board);
+extern void dump_coords(uint64_t validcoords);
+extern int read_map_file(const char *fname, Board *board);
+extern int write_map_file(const char *fname, Board *board);

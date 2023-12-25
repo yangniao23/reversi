@@ -15,10 +15,10 @@ static int parse_columncoord(const char *str) {
     } else if ('a' <= str[0] && str[0] <= 'a' + XSIZE) {
         return str[0] - 'a';
     }
-    return 1;
+    return -2;
 }
 
-static int parse_cmd(const char *str, char map[YSIZE][XSIZE], Flags *flags) {
+static int parse_cmd(const char *str, Board *board, Flags *flags) {
     char buf[BUFSIZE], *p;
     size_t last;
 
@@ -26,7 +26,7 @@ static int parse_cmd(const char *str, char map[YSIZE][XSIZE], Flags *flags) {
     memcpy(buf, str, last + 1);
     if (last >= 0 && buf[last] == '\n') {
         if (strtok(buf, " ")) p = strtok(NULL, "\n");
-        if (p == NULL) return -1;
+        // if (p == NULL) return -1;
     }
 
     if (str[0] == ':') {
@@ -36,16 +36,19 @@ static int parse_cmd(const char *str, char map[YSIZE][XSIZE], Flags *flags) {
                 return -1;
 
             case 'r':
-                if (read_map_file(p, map) != 0) {
+                if (read_map_file(p, board) != 0) {
                     fprintf(stderr, "read_map_file() failed.\n");
                     return 1;
                 };
-                dump_map(map);
+                dump_bitmap(board);
                 flags->reset_flag = true;
                 return -1;
 
             case 'w':
-                write_map_file(p, map);
+                if (write_map_file(p, board) != 0) {
+                    fprintf(stderr, "write_map_file() failed.\n");
+                    return 1;
+                };
                 if (str[2] != 'q') return 1;
 
             case 'q':
@@ -57,73 +60,49 @@ static int parse_cmd(const char *str, char map[YSIZE][XSIZE], Flags *flags) {
     return 0;
 }
 
-Directionlist *input_move(char map[YSIZE][XSIZE], Validcoord *validcoords,
-                          int *x, int *y, Flags *flags) {
-    Validcoord *entry = NULL;
+uint64_t input_move(Board *board, Validcoords *validcoords, Flags *flags) {
     char buf[BUFSIZE];
     char *endptr;
+    int x, y;
 
     while (1) {
         int res;
         printf("input coords: ");
         if (fgets(buf, sizeof(buf), stdin) == NULL) {
             fprintf(stderr, "fgets() failed.\n");
-            return NULL;
+            return 0;
         }
-        res = parse_cmd(buf, map, flags);
+        res = parse_cmd(buf, board, flags);
         if (res == 1)
             continue;
         else if (res == -1)
-            return NULL;
+            return 0;
 
-        *y = strtol(strtok(buf, " "), &endptr, 10) - 1;
+        y = strtol(strtok(buf, " "), &endptr, 10) - 1;
         if (endptr == buf) {
             fprintf(stderr, "Invalid input.\n");
             continue;
-        } else if (*y < 0 || *y >= YSIZE) {
+        } else if (y < 0 || y >= YSIZE) {
             fprintf(stderr, "Out of range.\n");
             continue;
         }
 
-        *x = parse_columncoord(strtok(NULL, "\0"));
-        if (*x == -1) {
+        x = parse_columncoord(strtok(NULL, "\0"));
+        if (x == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
-        } else if (*x == 1) {
+        } else if (x == -2) {
             fprintf(stderr, "Out of range.\n");
             continue;
         }
 
-        entry = search_validcoord(validcoords, *y, *x);
-        if (entry != NULL)
-            break;
-        else
+        if ((validcoords->coords & coord_to_bit(y, x)) == 0) {
             fprintf(stderr, "Cannot put here.\n");
-    }
-    return entry->directionlist;
-}
-
-void dump_map(char map[YSIZE][XSIZE]) {
-    flush();
-    putchar('\n');
-    printf("  a  b  c  d  e  f  g  h\n");
-    for (int y = 0; y < YSIZE; y++) {
-        putchar('1' + y);
-        for (int x = 0; x < XSIZE; x++) {
-            switch (map[y][x]) {
-                case 0:
-                    printf("| |");
-                    break;
-                case WHITE:
-                    printf("|●|");
-                    break;
-                case BLACK:
-                    printf("|○|");
-                    break;
-            }
+            continue;
         }
-        putchar('\n');
+        break;
     }
+    return coord_to_bit(y, x);
 }
 
 void dump_bitmap(Board *board) {
@@ -148,8 +127,23 @@ void dump_bitmap(Board *board) {
     }
 }
 
-int read_map_file(const char *fname, char map[YSIZE][XSIZE]) {
-    char buf[BUFSIZE];
+void dump_coords(uint64_t coords) {
+    int x, y;
+
+    printf("validcoords: ");
+    for (y = 0; y < YSIZE; y++) {
+        for (x = 0; x < XSIZE; x++) {
+            if (coords & 1) {
+                printf("%d%c ", y + 1, 'a' + x);
+            }
+            coords >>= 1;
+        }
+    }
+    printf("\n");
+}
+
+int read_map_file(const char *fname, Board *board) {
+    char buf[BUFSIZE], row[XSIZE];
     FILE *fp;
 
     if ((fp = fopen(fname, "r")) == NULL) {
@@ -157,29 +151,60 @@ int read_map_file(const char *fname, char map[YSIZE][XSIZE]) {
         return -1;
     }
     fgets(buf, sizeof(buf), fp);
+    board->black = 0;
+    board->white = 0;
 
     for (int y = 0; y < YSIZE; y++) {
         fgets(buf, sizeof(buf), fp);
-        map[y][0] = atoi(strtok(buf, ","));
+        row[0] = atoi(strtok(buf, ","));
         for (int x = 1; x < XSIZE; x++) {
-            map[y][x] = atoi(strtok(NULL, ","));
+            row[x] = atoi(strtok(NULL, ","));
+        }
+
+        for (int x = 0; x < XSIZE; x++) {
+            switch (row[x]) {
+                case 0:
+                    break;
+                case WHITE:
+                    board->white |= coord_to_bit(y, x);
+                    break;
+                case BLACK:
+                    board->black |= coord_to_bit(y, x);
+                    break;
+            }
         }
     }
     fclose(fp);
     return 0;
 }
 
-int write_map_file(const char *fname, char map[YSIZE][XSIZE]) {
+int write_map_file(const char *fname, Board *board) {
     FILE *fp;
+    char map[YSIZE][XSIZE];
 
     if ((fp = fopen(fname, "w")) == NULL) {
         fprintf(stderr, "fopen() failed.\n");
         return -1;
     }
-    fprintf(fp, "%d,%d\n", XSIZE, YSIZE);
 
     for (int y = 0; y < YSIZE; y++) {
         for (int x = 0; x < XSIZE; x++) {
+            if ((board->white & coord_to_bit(y, x)) == coord_to_bit(y, x)) {
+                map[y][x] = WHITE;
+            } else if ((board->black & coord_to_bit(y, x)) ==
+                       coord_to_bit(y, x)) {
+                map[y][x] = BLACK;
+            } else {
+                map[y][x] = 0;
+            }
+        }
+    }
+
+    fprintf(fp, "%d,%d\n", XSIZE, YSIZE);
+
+    for (int y = 0; y < YSIZE; y++) {
+        fprintf(fp, "%d", map[y][0]);
+        for (int x = 1; x < XSIZE; x++) {
             fprintf(fp, ",%d", map[y][x]);
         }
         fprintf(fp, "\n");
