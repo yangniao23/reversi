@@ -9,10 +9,6 @@
 
 #define LEFT_SHIFT(x, y) ((y > 0) ? (x << y) : (x >> -y))
 #define RIGHT_SHIFT(x, y) ((y > 0) ? (x >> y) : (x << -y))
-#define CURRENT_MODE_BOARD(board) \
-    *((board->mode == WHITE) ? &(board->white) : &(board->black))
-#define OPPOSITE_MODE_BOARD(board) \
-    *((board->mode == WHITE) ? &(board->black) : &(board->white))
 
 uint64_t coord_to_bit(int y, int x) {
     uint64_t bit = 1;
@@ -85,6 +81,5 @@ uint64_t reverse_stones(Board *board, Validcoords *validcoords, uint64_t put) {
     CURRENT_MODE_BOARD(board) ^= put | reverse;
     OPPOSITE_MODE_BOARD(board) ^= reverse;
 
-    free(validcoords);
     return reverse;
 }

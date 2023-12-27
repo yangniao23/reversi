@@ -1,7 +1,8 @@
 {
   "files.associations": {
     "mapmanager.h": "c",
-    "reversi.h": "c"
+    "reversi.h": "c",
+    "tools.h": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

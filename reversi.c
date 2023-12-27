@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "mapio.h"
 #include "mapmanager.h"
 #include "tools.h"
@@ -15,10 +16,11 @@ static void init(Board *board) {
     board->white = 0x0000001008000000;
 }
 
-static int make_move(Board *board, bool *flag) {
+static int make_move(Board *board, bool *flag,
+                     int16_t prepared_score_matrix[YSIZE][UINT8_MAX]) {
     Flags input_flags = {false};
     Validcoords *validcoords;
-    uint64_t put;
+    uint64_t put, suggested;
 
     dump_bitmap(board);
 
@@ -36,11 +38,17 @@ static int make_move(Board *board, bool *flag) {
     }
     dump_coords(validcoords->coords);
     printf("%s turn\n", board->mode == BLACK ? "BLACK" : "WHITE");
+
+    suggested = search(board, validcoords, prepared_score_matrix);
+
+    printf("suggested: ");
+    dump_coords(suggested);
+
     put = input_move(board, validcoords, &input_flags);
     if (put == 0) {
         if (input_flags.reset_flag) {
             input_flags.reset_flag = false;
-            return make_move(board, flag);
+            return make_move(board, flag, prepared_score_matrix);
         }
         if (input_flags.skip_flag) {
             input_flags.skip_flag = false;
@@ -55,7 +63,7 @@ static int make_move(Board *board, bool *flag) {
         }
     }
     reverse_stones(board, validcoords, put);
-    // free(validcoords); reverse_stones()内でfreeされる
+    free(validcoords);
     return 0;
 }
 
@@ -86,11 +94,14 @@ static void show_winner(Board *board) {
 int main(int argc, const char *argv[]) {
     Board board;
     bool flag = true;
-    int winner;
+
+    int16_t prepared_score_matrix[YSIZE][UINT8_MAX];
+    precompute_score_matrix(prepared_score_matrix,
+                            (int8_t(*)[XSIZE])SCORE_MATRIX);
 
     init(&board);
     while (1) {
-        int res = make_move(&board, &flag);
+        int res = make_move(&board, &flag, prepared_score_matrix);
         if (res == -1) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
@@ -100,7 +111,7 @@ int main(int argc, const char *argv[]) {
 
         board.mode *= -1;
 
-        res = make_move(&board, &flag);
+        res = make_move(&board, &flag, prepared_score_matrix);
         if (res == -1) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
