@@ -16,6 +16,21 @@ uint64_t coord_to_bit(int y, int x) {
     return bit;
 }
 
+char *bit_to_coord(char *coord, size_t length, uint64_t bit) {
+    if (length < 3) return NULL;
+    for (size_t y = 0; y < YSIZE; y++) {
+        for (size_t x = 0; x < XSIZE; x++) {
+            if (bit & coord_to_bit(y, x)) {
+                coord[0] = '1' + y;
+                coord[1] = 'a' + x;
+                coord[2] = '\0';
+                return coord;
+            }
+        }
+    }
+    return NULL;
+}
+
 Validcoords *get_validcoords(Board *board) {
     int directions[8] = {1,         -1,         XSIZE,     -XSIZE,
                          XSIZE + 1, -XSIZE - 1, XSIZE - 1, -XSIZE + 1};

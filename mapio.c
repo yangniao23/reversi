@@ -8,6 +8,21 @@
 #include "mapmanager.h"
 #include "tools.h"
 
+/*
+parse_*coord() の戻り値
+0から(XSIZE|YSIZE)-1 は座標
+-1 はstrがNULL
+-2 は範囲外
+*/
+
+static int parse_rowcoord(const char *str) {
+    if (str == NULL) return -1;
+    if ('1' <= str[0] && str[0] <= '1' + YSIZE) {
+        return str[0] - '1';
+    }
+    return -2;
+}
+
 static int parse_columncoord(const char *str) {
     if (str == NULL) return -1;
     if ('A' <= str[0] && str[0] <= 'A' + XSIZE) {
@@ -18,15 +33,20 @@ static int parse_columncoord(const char *str) {
     return -2;
 }
 
+/*
+-1 はmake_move()からやり直す (石の配置が変わるのでvalidcoordsの再計算が必要)
+0 はコマンドなし
+1 はinput_move()からやり直す
+*/
 static int parse_cmd(const char *str, Board *board, Flags *flags) {
     char buf[BUFSIZE], *p;
     size_t last;
 
     last = strlen(str) - 1;
     memcpy(buf, str, last + 1);
-    if (last >= 0 && buf[last] == '\n') {
+    if (buf[last] == '\n') {
+        // スペース区切りのコマンドを取り出す
         if (strtok(buf, " ")) p = strtok(NULL, "\n");
-        // if (p == NULL) return -1;
     }
 
     if (str[0] == ':') {
@@ -49,7 +69,10 @@ static int parse_cmd(const char *str, Board *board, Flags *flags) {
                     fprintf(stderr, "write_map_file() failed.\n");
                     return 1;
                 };
-                if (str[2] != 'q') return 1;
+                if (str[2] == 'q')
+                    return -1;
+                else
+                    return 1;
 
             case 'q':
                 flags->quit_flag = true;
@@ -62,7 +85,6 @@ static int parse_cmd(const char *str, Board *board, Flags *flags) {
 
 uint64_t input_move(Board *board, Validcoords *validcoords, Flags *flags) {
     char buf[BUFSIZE];
-    char *endptr;
     int x, y;
 
     while (1) {
@@ -78,16 +100,16 @@ uint64_t input_move(Board *board, Validcoords *validcoords, Flags *flags) {
         else if (res == -1)
             return 0;
 
-        y = strtol(strtok(buf, " "), &endptr, 10) - 1;
-        if (endptr == buf) {
+        y = parse_rowcoord(buf);
+        if (y == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
-        } else if (y < 0 || y >= YSIZE) {
+        } else if (y == -2) {
             fprintf(stderr, "Out of range.\n");
             continue;
         }
 
-        x = parse_columncoord(strtok(NULL, "\0"));
+        x = parse_columncoord(buf + 1);
         if (x == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
@@ -130,7 +152,6 @@ void dump_bitmap(Board *board) {
 void dump_coords(uint64_t coords) {
     int x, y;
 
-    printf("validcoords: ");
     for (y = 0; y < YSIZE; y++) {
         for (x = 0; x < XSIZE; x++) {
             if (coords & 1) {

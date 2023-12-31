@@ -8,5 +8,5 @@ file(GLOB MY_SOURCE **.h **.c)
 enable_testing()
 
 
-add_compile_options(-Wall -O0 -g)
+add_compile_options(-Wall -Werror -W -O0 -g)
 add_executable(reversi ${MY_SOURCE})

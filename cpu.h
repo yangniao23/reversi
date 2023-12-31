@@ -9,3 +9,7 @@ extern void precompute_score_matrix(int16_t dst[YSIZE][UINT8_MAX],
 
 extern uint64_t search(Board *board, Validcoords *validcoords,
                        int16_t prepared_score_matrix[YSIZE][UINT8_MAX]);
+
+extern int negamax(uint64_t *max_coord, Board *board, Validcoords *validcoords,
+                   int16_t prepared_score_matrix[YSIZE][UINT8_MAX], int depth,
+                   bool is_pass);
