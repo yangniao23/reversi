@@ -1,0 +1,3 @@
+[submodule "zhash-c"]
+	path = zhash-c
+	url = git@github.com:zfletch/zhash-c.git
