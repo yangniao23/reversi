@@ -65,16 +65,6 @@ CMAKE_BINARY_DIR = /home/ksmt/git/proexam/reversi
 #=============================================================================
 # Targets provided globally by CMake.
 
-# Special rule for the target test
-test:
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
-	/usr/bin/ctest --force-new-ctest-process $(ARGS)
-.PHONY : test
-
-# Special rule for the target test
-test/fast: test
-.PHONY : test/fast
-
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -94,6 +84,51 @@ rebuild_cache:
 # Special rule for the target rebuild_cache
 rebuild_cache/fast: rebuild_cache
 .PHONY : rebuild_cache/fast
+
+# Special rule for the target list_install_components
+list_install_components:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"Unspecified\""
+.PHONY : list_install_components
+
+# Special rule for the target list_install_components
+list_install_components/fast: list_install_components
+.PHONY : list_install_components/fast
+
+# Special rule for the target install
+install: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install
+
+# Special rule for the target install
+install/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install/fast
+
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local/fast
+
+# Special rule for the target install/strip
+install/strip: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip
+
+# Special rule for the target install/strip
+install/strip/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -127,24 +162,37 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named reversi
+# Target rules for targets named reversi.out
 
 # Build rule for target.
-reversi: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 reversi
-.PHONY : reversi
+reversi.out: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 reversi.out
+.PHONY : reversi.out
 
 # fast build rule for target.
-reversi/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/build
-.PHONY : reversi/fast
+reversi.out/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/build
+.PHONY : reversi.out/fast
+
+#=============================================================================
+# Target rules for targets named zhash-c
+
+# Build rule for target.
+zhash-c: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 zhash-c
+.PHONY : zhash-c
+
+# fast build rule for target.
+zhash-c/fast:
+	$(MAKE) $(MAKESILENT) -f zhash-c/CMakeFiles/zhash-c.dir/build.make zhash-c/CMakeFiles/zhash-c.dir/build
+.PHONY : zhash-c/fast
 
 cpu.o: cpu.c.o
 .PHONY : cpu.o
 
 # target to build an object file
 cpu.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/cpu.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/cpu.c.o
 .PHONY : cpu.c.o
 
 cpu.i: cpu.c.i
@@ -152,7 +200,7 @@ cpu.i: cpu.c.i
 
 # target to preprocess a source file
 cpu.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/cpu.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/cpu.c.i
 .PHONY : cpu.c.i
 
 cpu.s: cpu.c.s
@@ -160,7 +208,7 @@ cpu.s: cpu.c.s
 
 # target to generate assembly for a file
 cpu.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/cpu.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/cpu.c.s
 .PHONY : cpu.c.s
 
 mapio.o: mapio.c.o
@@ -168,7 +216,7 @@ mapio.o: mapio.c.o
 
 # target to build an object file
 mapio.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/mapio.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/mapio.c.o
 .PHONY : mapio.c.o
 
 mapio.i: mapio.c.i
@@ -176,7 +224,7 @@ mapio.i: mapio.c.i
 
 # target to preprocess a source file
 mapio.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/mapio.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/mapio.c.i
 .PHONY : mapio.c.i
 
 mapio.s: mapio.c.s
@@ -184,7 +232,7 @@ mapio.s: mapio.c.s
 
 # target to generate assembly for a file
 mapio.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/mapio.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/mapio.c.s
 .PHONY : mapio.c.s
 
 mapmanager.o: mapmanager.c.o
@@ -192,7 +240,7 @@ mapmanager.o: mapmanager.c.o
 
 # target to build an object file
 mapmanager.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/mapmanager.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/mapmanager.c.o
 .PHONY : mapmanager.c.o
 
 mapmanager.i: mapmanager.c.i
@@ -200,7 +248,7 @@ mapmanager.i: mapmanager.c.i
 
 # target to preprocess a source file
 mapmanager.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/mapmanager.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/mapmanager.c.i
 .PHONY : mapmanager.c.i
 
 mapmanager.s: mapmanager.c.s
@@ -208,7 +256,7 @@ mapmanager.s: mapmanager.c.s
 
 # target to generate assembly for a file
 mapmanager.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/mapmanager.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/mapmanager.c.s
 .PHONY : mapmanager.c.s
 
 reversi.o: reversi.c.o
@@ -216,7 +264,7 @@ reversi.o: reversi.c.o
 
 # target to build an object file
 reversi.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/reversi.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/reversi.c.o
 .PHONY : reversi.c.o
 
 reversi.i: reversi.c.i
@@ -224,7 +272,7 @@ reversi.i: reversi.c.i
 
 # target to preprocess a source file
 reversi.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/reversi.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/reversi.c.i
 .PHONY : reversi.c.i
 
 reversi.s: reversi.c.s
@@ -232,7 +280,7 @@ reversi.s: reversi.c.s
 
 # target to generate assembly for a file
 reversi.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/reversi.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/reversi.c.s
 .PHONY : reversi.c.s
 
 tools.o: tools.c.o
@@ -240,7 +288,7 @@ tools.o: tools.c.o
 
 # target to build an object file
 tools.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/tools.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/tools.c.o
 .PHONY : tools.c.o
 
 tools.i: tools.c.i
@@ -248,7 +296,7 @@ tools.i: tools.c.i
 
 # target to preprocess a source file
 tools.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/tools.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/tools.c.i
 .PHONY : tools.c.i
 
 tools.s: tools.c.s
@@ -256,7 +304,7 @@ tools.s: tools.c.s
 
 # target to generate assembly for a file
 tools.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.dir/build.make CMakeFiles/reversi.dir/tools.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/reversi.out.dir/build.make CMakeFiles/reversi.out.dir/tools.c.s
 .PHONY : tools.c.s
 
 # Help Target
@@ -266,9 +314,13 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... install"
+	@echo "... install/local"
+	@echo "... install/strip"
+	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... test"
-	@echo "... reversi"
+	@echo "... reversi.out"
+	@echo "... zhash-c"
 	@echo "... cpu.o"
 	@echo "... cpu.i"
 	@echo "... cpu.s"

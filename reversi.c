@@ -10,6 +10,8 @@
 #include "mapmanager.h"
 #include "tools.h"
 
+#define DEPTH 25
+
 static void init(Board *board) {
     board->mode = BLACK;
     board->black = 0x0000000810000000;
@@ -39,7 +41,7 @@ static int make_move(Board *board, bool *flag,
     }
 
     if (auto_flag) {
-        negamax(&put, board, validcoords, prepared_score_matrix, 4, false);
+        put = search(board, validcoords, prepared_score_matrix, DEPTH);
         reverse_stones(board, validcoords, put);
         free(validcoords);
         return 0;
@@ -48,7 +50,7 @@ static int make_move(Board *board, bool *flag,
     dump_coords(validcoords->coords);
     printf("%s turn\n", board->mode == BLACK ? "BLACK" : "WHITE");
 
-    negamax(&suggested, board, validcoords, prepared_score_matrix, 4, false);
+    suggested = search(board, validcoords, prepared_score_matrix, DEPTH);
 
     printf("suggested: ");
     dump_coords(suggested);

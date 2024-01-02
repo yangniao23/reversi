@@ -1,2 +1,4 @@
 CMakeFiles/
 build/
+zhash-c
+*.out

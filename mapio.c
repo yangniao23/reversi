@@ -39,7 +39,7 @@ static int parse_columncoord(const char *str) {
 1 はinput_move()からやり直す
 */
 static int parse_cmd(const char *str, Board *board, Flags *flags) {
-    char buf[BUFSIZE], *p;
+    char buf[BUFSIZE], *p = NULL;
     size_t last;
 
     last = strlen(str) - 1;
