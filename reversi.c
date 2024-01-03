@@ -10,7 +10,7 @@
 #include "mapmanager.h"
 #include "tools.h"
 
-#define DEPTH 25
+#define DEPTH 8
 
 static void init(Board *board) {
     board->mode = BLACK;
@@ -38,6 +38,8 @@ static int make_move(Board *board, bool *flag,
             printf("game set\n");
             return 1;
         }
+    } else {
+        *flag = true;
     }
 
     if (auto_flag) {
@@ -112,7 +114,7 @@ int main(void) {
 
     init(&board);
     while (1) {
-        int res = make_move(&board, &flag, prepared_score_matrix, true);
+        int res = make_move(&board, &flag, prepared_score_matrix, false);
         if (res == -1) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
@@ -122,7 +124,7 @@ int main(void) {
 
         board.mode *= -1;
 
-        res = make_move(&board, &flag, prepared_score_matrix, false);
+        res = make_move(&board, &flag, prepared_score_matrix, true);
         if (res == -1) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;

@@ -98,3 +98,10 @@ uint64_t reverse_stones(Board *board, Validcoords *validcoords, uint64_t put) {
 
     return reverse;
 }
+
+Board *copy_board(Board *dst, Board *src) {
+    dst->mode = src->mode;
+    dst->white = src->white;
+    dst->black = src->black;
+    return dst;
+}
