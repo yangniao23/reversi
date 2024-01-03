@@ -12,41 +12,68 @@
 
 #define DEPTH 8
 
+typedef struct {
+    Board *board;
+    uint64_t put;
+    bool skip_flag;
+    bool end_game_flag;
+} Input_Result;
+
 static void init(Board *board) {
     board->mode = BLACK;
     board->black = 0x0000000810000000;
     board->white = 0x0000001008000000;
 }
 
-static int make_move(Board *board, bool *flag,
-                     int16_t prepared_score_matrix[YSIZE][UINT8_MAX],
-                     bool auto_flag) {
+static Input_Result *generate_result(Input_Result *result, Board *board,
+                                     uint64_t put, bool skip_flag,
+                                     bool end_game_flag) {
+    if (result == NULL) return NULL;
+    if ((result->board = (Board *)malloc(sizeof(Board))) == NULL) {
+        fprintf(stderr, "malloc() failed.\n");
+        return NULL;
+    }
+    memcpy(result->board, board, sizeof(Board));
+    result->put = put;
+    result->skip_flag = skip_flag;
+    result->end_game_flag = end_game_flag;
+    return result;
+}
+
+static size_t make_move(Input_Result results[], size_t turn_num, Board *board,
+                        int16_t prepared_score_matrix[YSIZE][UINT8_MAX],
+                        bool auto_flag, bool opposite_cpu_flag) {
     Flags input_flags = {false};
     Validcoords *validcoords;
     uint64_t put, suggested = 0;
+    Input_Result *before_input_result = &results[turn_num - 1];
+    Input_Result *current_input_result = &results[turn_num];
 
     dump_bitmap(board);
+    printf("before_put: ");
+    if (before_input_result != NULL) dump_coords(before_input_result->put);
 
     validcoords = get_validcoords(board);
+    // 最初の2回で coords == 0 にはならないから NULL チェックは不要
     if (validcoords->coords == 0) {
         free(validcoords);
-        if (*flag) {
+        if (before_input_result->skip_flag) {
             printf("pass\n");
-            *flag = false;
-            return 0;
+            generate_result(current_input_result, board, 0, true, false);
+            return ++turn_num;
         } else {
             printf("game set\n");
-            return 1;
+            generate_result(current_input_result, board, 0, true, true);
+            return turn_num;
         }
-    } else {
-        *flag = true;
     }
 
     if (auto_flag) {
         put = search(board, validcoords, prepared_score_matrix, DEPTH);
         reverse_stones(board, validcoords, put);
         free(validcoords);
-        return 0;
+        generate_result(current_input_result, board, put, false, false);
+        return ++turn_num;
     }
     printf("validcoords: ");
     dump_coords(validcoords->coords);
@@ -59,25 +86,48 @@ static int make_move(Board *board, bool *flag,
 
     put = input_move(board, validcoords, &input_flags);
     if (put == 0) {
+        free(validcoords);
         if (input_flags.reset_flag) {
-            input_flags.reset_flag = false;
-            return make_move(board, flag, prepared_score_matrix, auto_flag);
+            return make_move(results, turn_num, board, prepared_score_matrix,
+                             auto_flag, opposite_cpu_flag);
         }
         if (input_flags.skip_flag) {
-            input_flags.skip_flag = false;
-            return 0;
+            generate_result(current_input_result, board, 0, false, false);
+            return ++turn_num;
         }
         if (input_flags.quit_flag) {
-            input_flags.quit_flag = false;
-            return 1;
-        } else {
-            fprintf(stderr, "input_move() failed.\n");
-            return -1;
+            generate_result(current_input_result, board, 0, false, true);
+            return turn_num;
+        }  // else
+        if (input_flags.undo_flag) {
+            if (turn_num < 2 || (opposite_cpu_flag && turn_num < 3)) {
+                fprintf(stderr, "undo is not available.\n");
+                return make_move(results, turn_num, board,
+                                 prepared_score_matrix, auto_flag,
+                                 opposite_cpu_flag);
+            } else {
+                if (opposite_cpu_flag) {
+                    dump_bitmap(board);
+                    memcpy(board, results[turn_num - 2].board, sizeof(Board));
+                    return make_move(results, turn_num - 2, board,
+                                     prepared_score_matrix, auto_flag,
+                                     opposite_cpu_flag);
+                } else {
+                    memcpy(board, before_input_result->board, sizeof(Board));
+                    generate_result(current_input_result, board, 0, false,
+                                    false);
+                    return turn_num - 1;
+                }
+            }
         }
+        fprintf(stderr, "input_move() failed.\n");
+        return 0;
     }
+
     reverse_stones(board, validcoords, put);
     free(validcoords);
-    return 0;
+    generate_result(current_input_result, board, put, false, false);
+    return ++turn_num;
 }
 
 static int popcount(uint64_t bit) {
@@ -106,29 +156,28 @@ static void show_winner(Board *board) {
 
 int main(void) {
     Board board;
-    bool flag = true;
-
+    Input_Result results[64 + 1] = {0};  // 最初の結果を results[1] とする
     int16_t prepared_score_matrix[YSIZE][UINT8_MAX];
+    size_t i = 1;
     precompute_score_matrix(prepared_score_matrix,
                             (int8_t(*)[XSIZE])SCORE_MATRIX);
 
     init(&board);
     while (1) {
-        int res = make_move(&board, &flag, prepared_score_matrix, false);
-        if (res == -1) {
+        i = make_move(results, i, &board, prepared_score_matrix, true, false);
+        if (i == 0) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
-        } else if (res == 1) {
+        } else if (results[i].end_game_flag) {
             break;
         }
-
         board.mode *= -1;
 
-        res = make_move(&board, &flag, prepared_score_matrix, true);
-        if (res == -1) {
+        i = make_move(results, i, &board, prepared_score_matrix, false, true);
+        if (i == 0) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
-        } else if (res == 1) {
+        } else if (results[i].end_game_flag) {
             break;
         }
         board.mode *= -1;

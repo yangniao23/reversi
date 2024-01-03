@@ -74,6 +74,10 @@ static int parse_cmd(const char *str, Board *board, Flags *flags) {
                 else
                     return 1;
 
+            case 'u':
+                flags->undo_flag = true;
+                return -1;
+
             case 'q':
                 flags->quit_flag = true;
                 return -1;

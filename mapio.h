@@ -7,6 +7,7 @@ typedef struct {
     bool reset_flag;
     bool skip_flag;
     bool quit_flag;
+    bool undo_flag;
 } Flags;
 
 extern uint64_t input_move(Board *board, Validcoords *validcoords,
