@@ -107,8 +107,10 @@ static size_t make_move(Input_Result results[], size_t turn_num, Board *board,
                                  opposite_cpu_flag);
             } else {
                 if (opposite_cpu_flag) {
-                    dump_bitmap(board);
-                    memcpy(board, results[turn_num - 2].board, sizeof(Board));
+                    // i-2手目の入力前に戻すためにi-3手目の盤面をコピーし，modeを反転させる
+                    memcpy(board, results[turn_num - 3].board, sizeof(Board));
+                    board->mode *= -1;
+                    flush();
                     return make_move(results, turn_num - 2, board,
                                      prepared_score_matrix, auto_flag,
                                      opposite_cpu_flag);
