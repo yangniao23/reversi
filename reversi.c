@@ -49,9 +49,9 @@ static size_t make_move(Input_Result results[], size_t turn_num, Board *board,
     Input_Result *before_input_result = &results[turn_num - 1];
     Input_Result *current_input_result = &results[turn_num];
 
-    dump_bitmap(board);
     printf("before_put: ");
-    if (before_input_result != NULL) dump_coords(before_input_result->put);
+    dump_coords(before_input_result->put);
+    dump_bitmap(board);
 
     validcoords = get_validcoords(board);
     // 最初の2回で coords == 0 にはならないから NULL チェックは不要
@@ -101,7 +101,7 @@ static size_t make_move(Input_Result results[], size_t turn_num, Board *board,
         }  // else
         if (input_flags.undo_flag) {
             if (turn_num < 2 || (opposite_cpu_flag && turn_num < 3)) {
-                fprintf(stderr, "undo is not available.\n");
+                fprintf(stderr, "undo is not available.\n\n");
                 return make_move(results, turn_num, board,
                                  prepared_score_matrix, auto_flag,
                                  opposite_cpu_flag);
@@ -172,6 +172,7 @@ int main(void) {
             break;
         }
         board.mode *= -1;
+        flush();
 
         i = make_move(results, i, &board, prepared_score_matrix, false, true);
         if (i == 0) {
@@ -181,6 +182,7 @@ int main(void) {
             break;
         }
         board.mode *= -1;
+        flush();
     }
 
     show_winner(&board);

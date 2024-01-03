@@ -134,7 +134,6 @@ uint64_t input_move(Board *board, Validcoords *validcoords, Flags *flags) {
 void dump_bitmap(Board *board) {
     uint64_t bit = 1;
 
-    flush();
     putchar('\n');
     printf("  a  b  c  d  e  f  g  h\n");
     for (int y = 0; y < YSIZE; y++) {
