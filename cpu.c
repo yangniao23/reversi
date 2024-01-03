@@ -99,11 +99,15 @@ static inline int calulate_move_ordering_value(
 }
 
 static inline int compare_child_node(const void *a, const void *b) {
-    ChildNode *child_node_a = (ChildNode *)a;
-    ChildNode *child_node_b = (ChildNode *)b;
+    ChildNode *node_a = (ChildNode *)a;
+    ChildNode *node_b = (ChildNode *)b;
 
-    return child_node_b->move_ordering_value -
-           child_node_a->move_ordering_value;
+    if (node_a->move_ordering_value > node_b->move_ordering_value)
+        return -1;
+    else if (node_a->move_ordering_value < node_b->move_ordering_value)
+        return 1;
+    else
+        return 0;
 }
 
 static inline int search_function_process_if_passed(
