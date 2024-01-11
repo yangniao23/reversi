@@ -21,8 +21,8 @@ char *bit_to_coord(char *coord, size_t length, uint64_t bit) {
     for (size_t y = 0; y < YSIZE; y++) {
         for (size_t x = 0; x < XSIZE; x++) {
             if (bit & coord_to_bit(y, x)) {
-                coord[0] = '1' + y;
-                coord[1] = 'a' + x;
+                coord[0] = 'a' + x;
+                coord[1] = '1' + y;
                 coord[2] = '\0';
                 return coord;
             }
