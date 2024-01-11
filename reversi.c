@@ -58,13 +58,14 @@ static size_t make_move(Input_Result results[], size_t turn_num, Board *board,
     if (validcoords->coords == 0) {
         free(validcoords);
         if (before_input_result->skip_flag) {
-            printf("pass\n");
-            generate_result(current_input_result, board, 0, true, false);
-            return ++turn_num;
-        } else {
             printf("game set\n");
             generate_result(current_input_result, board, 0, true, true);
             return turn_num;
+
+        } else {
+            printf("pass\n");
+            generate_result(current_input_result, board, 0, true, false);
+            return ++turn_num;
         }
     }
 
