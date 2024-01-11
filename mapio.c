@@ -104,7 +104,7 @@ uint64_t input_move(Board *board, Validcoords *validcoords, Flags *flags) {
         else if (res == -1)
             return 0;
 
-        y = parse_columncoord(buf);
+        x = parse_columncoord(buf);
         if (y == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
@@ -113,7 +113,7 @@ uint64_t input_move(Board *board, Validcoords *validcoords, Flags *flags) {
             continue;
         }
 
-        x = parse_rowcoord(buf + 1);
+        y = parse_rowcoord(buf + 1);
         if (x == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
