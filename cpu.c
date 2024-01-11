@@ -86,11 +86,11 @@ static inline int calulate_move_ordering_value(
     if (zhash_exists(tables->prev->upper, key)) {
         // 前回の探索で上限値が格納された
         score =
-            CACHE_HIT_BONUS + *((int *)(zhash_get(tables->prev->upper, key)));
+            CACHE_HIT_BONUS - *((int *)(zhash_get(tables->prev->upper, key)));
     } else if (zhash_exists(tables->prev->lower, key)) {
         // 前回の探索で下限値が格納された
         score =
-            CACHE_HIT_BONUS + *((int *)(zhash_get(tables->prev->lower, key)));
+            CACHE_HIT_BONUS - *((int *)(zhash_get(tables->prev->lower, key)));
     } else {
         // 枝刈りされた
         score = -evaluate(board, prepared_score_matrix);
