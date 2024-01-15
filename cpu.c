@@ -33,6 +33,7 @@ const int8_t SCORE_MATRIX[YSIZE][XSIZE] = {
     {-12, -15, -3, -3, -3, -3, -15, -12}, {30, -12, 0, -1, -1, 0, -12, 30}};
 
 unsigned long long visited_nodes = 0;
+unsigned long long cache_hitted = 0;
 
 void precompute_score_matrix(int16_t dst[YSIZE][UINT8_MAX],
                              int8_t score_matrix[YSIZE][XSIZE]) {
@@ -66,6 +67,7 @@ static inline int evaluate(Board *board,
 }
 
 static inline int get_score_from_table(hashmap_t *table, Board *board) {
+    cache_hitted++;
     int res = hashmap_get(table, board);
     return (board->mode == BLACK) ? res : -res;
 }
@@ -457,6 +459,7 @@ uint64_t search(Board *board, Validcoords *validcoords,
                 int16_t precompute_score_matrix[YSIZE][UINT8_MAX],
                 size_t depth) {
     visited_nodes = 0;
+    cache_hitted = 0;
     TransposeTables **tables;
     uint64_t max_coord = 0;
     ChildNode child_nodes[CHILD_NODES_MAX];
@@ -507,6 +510,7 @@ uint64_t search(Board *board, Validcoords *validcoords,
         }
         fprintf(stderr, "depth: %zu, nodes: %llu\n", search_depth,
                 visited_nodes);
+        fprintf(stderr, "cache hit: %llu\n", cache_hitted);
         clear_tables(tables[1]);
         swap_tables(tables);
     }
