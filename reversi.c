@@ -10,7 +10,7 @@
 #include "mapmanager.h"
 #include "tools.h"
 
-#define DEPTH 8
+#define DEPTH 10
 
 typedef struct {
     Board *board;
