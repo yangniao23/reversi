@@ -105,19 +105,19 @@ uint64_t input_move(Board *board, Validcoords *validcoords, Flags *flags) {
             return 0;
 
         x = parse_columncoord(buf);
-        if (y == -1) {
+        if (x == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
-        } else if (y == -2) {
+        } else if (x == -2) {
             fprintf(stderr, "Out of range.\n");
             continue;
         }
 
         y = parse_rowcoord(buf + 1);
-        if (x == -1) {
+        if (y == -1) {
             fprintf(stderr, "Invalid input.\n");
             continue;
-        } else if (x == -2) {
+        } else if (y == -2) {
             fprintf(stderr, "Out of range.\n");
             continue;
         }
