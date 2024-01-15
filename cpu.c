@@ -7,12 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "hashmap.h"
 #include "mapio.h"
 #include "mapmanager.h"
 #include "tools.h"
-#include "zhash.h"
 
-#define CHILD_NODES_MAX 16384
+#define CHILD_NODES_MAX 64
 #define CACHE_HIT_BONUS 1000
 
 typedef struct {
@@ -21,7 +21,7 @@ typedef struct {
     int move_ordering_value;
 } ChildNode;
 
-typedef int (*search_func_t)(Board *, TransposeTables *,
+typedef int (*search_func_t)(Board *, TransposeTables **,
                              int16_t[YSIZE][UINT8_MAX], int, int, int, bool);
 
 typedef void (*store_node_t)(Board *, ChildNode *, uint64_t, int);
@@ -31,6 +31,8 @@ const int8_t SCORE_MATRIX[YSIZE][XSIZE] = {
     {0, -3, 0, -1, -1, 0, -3, 0},         {-1, -3, -1, -1, -1, -1, -3, -1},
     {-1, -3, -1, -1, -1, -1, -3, -1},     {0, -3, 0, -1, -1, 0, -3, 0},
     {-12, -15, -3, -3, -3, -3, -15, -12}, {30, -12, 0, -1, -1, 0, -12, 30}};
+
+unsigned long long visited_nodes = 0;
 
 void precompute_score_matrix(int16_t dst[YSIZE][UINT8_MAX],
                              int8_t score_matrix[YSIZE][XSIZE]) {
@@ -49,8 +51,8 @@ void precompute_score_matrix(int16_t dst[YSIZE][UINT8_MAX],
     }
 }
 
-static int evaluate(Board *board,
-                    int16_t prepared_score_matrix[YSIZE][UINT8_MAX]) {
+static inline int evaluate(Board *board,
+                           int16_t prepared_score_matrix[YSIZE][UINT8_MAX]) {
     int score = 0;
     uint8_t *current_player_row_value = (uint8_t *)&(CURRENT_MODE_BOARD(board));
     uint8_t *opposite_player_row_value =
@@ -63,34 +65,37 @@ static int evaluate(Board *board,
     return score;
 }
 
-static inline char *generate_key(Board *board) {
-    char *key = (char *)malloc(8 + 8 + 1 + 1);  // black + white + mode + '\0'
+static inline int get_score_from_table(hashmap_t *table, Board *board) {
+    int res = hashmap_get(table, board);
+    return (board->mode == BLACK) ? res : -res;
+}
 
-    memcpy(key, &(board->black), 8);
-    memcpy(key + 8, &(board->white), 8);
-    key[16] = (board->mode == BLACK) ? 1 : 0;
-    key[17] = '\0';
-    return key;
+static inline void regist_score_to_table(hashmap_t *table, Board *board,
+                                         int score) {
+    (board->mode == BLACK) ? hashmap_set(table, board, score)
+                           : hashmap_set(table, board, -score);
 }
 
 static inline int calulate_move_ordering_value(
-    TransposeTables *tables, char *key, Board *board,
+    TransposeTables **tables, Board *board,
     int16_t prepared_score_matrix[YSIZE][UINT8_MAX]) {
     int score = 0;
 
-    if (tables->prev == NULL) {
+    TransposeTables *before_tables = tables[1];
+
+    if (before_tables == NULL) {
         // 前回の探索がない
         return -evaluate(board, prepared_score_matrix);
     }
 
-    if (zhash_exists(tables->prev->upper, key)) {
+    if (hashmap_exist(before_tables->upper, board)) {
         // 前回の探索で上限値が格納された
         score =
-            CACHE_HIT_BONUS - *((int *)(zhash_get(tables->prev->upper, key)));
-    } else if (zhash_exists(tables->prev->lower, key)) {
+            CACHE_HIT_BONUS - get_score_from_table(before_tables->upper, board);
+    } else if (hashmap_exist(before_tables->lower, board)) {
         // 前回の探索で下限値が格納された
         score =
-            CACHE_HIT_BONUS - *((int *)(zhash_get(tables->prev->lower, key)));
+            CACHE_HIT_BONUS - get_score_from_table(before_tables->lower, board);
     } else {
         // 枝刈りされた
         score = -evaluate(board, prepared_score_matrix);
@@ -99,6 +104,7 @@ static inline int calulate_move_ordering_value(
 }
 
 static inline int compare_child_node(const void *a, const void *b) {
+    // 降順にソート
     ChildNode *node_a = (ChildNode *)a;
     ChildNode *node_b = (ChildNode *)b;
 
@@ -111,7 +117,7 @@ static inline int compare_child_node(const void *a, const void *b) {
 }
 
 static inline int search_function_process_if_passed(
-    Board *board, TransposeTables *tables,
+    Board *board, TransposeTables **tables,
     int16_t precompute_score_matrix[YSIZE][UINT8_MAX], int depth, int alpha,
     int beta, bool is_pass, search_func_t search_func) {
     if (is_pass)
@@ -127,7 +133,8 @@ static inline int search_function_process_if_passed(
 
 static inline size_t enumerate_nodes(
     Board *board, Validcoords *validcoords, ChildNode *child_nodes,
-    TransposeTables *tables, int16_t precomputed_score_matrix[YSIZE][UINT8_MAX],
+    TransposeTables **tables,
+    int16_t precomputed_score_matrix[YSIZE][UINT8_MAX],
     store_node_t store_func) {
     uint64_t coords = validcoords->coords;
     size_t child_nodes_count = 0;
@@ -141,27 +148,24 @@ static inline size_t enumerate_nodes(
             }
 
             uint64_t put = coord_to_bit(y, x);
-            Board *tmp_board;
-            char *key;
+            Board *tmp_board = (Board *)malloc(sizeof(Board));
 
-            if ((tmp_board = (Board *)malloc(sizeof(Board))) == NULL) {
+            if (tmp_board == NULL) {
                 perror("malloc");
                 exit(EXIT_FAILURE);
             }
 
             *tmp_board = *board;
-            key = generate_key(tmp_board);
 
             reverse_stones(tmp_board, validcoords, put);
 
             tmp_board->mode = -tmp_board->mode;
 
             store_func(tmp_board, &(child_nodes[child_nodes_count]), put,
-                       calulate_move_ordering_value(tables, key, tmp_board,
+                       calulate_move_ordering_value(tables, tmp_board,
                                                     precomputed_score_matrix));
 
             child_nodes_count++;
-            free(key);
         }
     }
     return child_nodes_count;
@@ -186,45 +190,48 @@ static inline void store_board_and_put(Board *board, ChildNode *child_node,
     UNUSED(unused_move_ordering_value);
 }
 
-static inline void regist_score_to_table(struct ZHashTable *table, char *key,
-                                         int score) {
-    int *score_ptr = (int *)malloc(sizeof(int));
-    *score_ptr = score;
-    zhash_set(table, key, score_ptr);
-}
+// hashmap には黒目線の値を格納する
 
-static inline void free_child_nodes(ChildNode *child_nodes, size_t length) {
+static inline void free_child_nodes(ChildNode child_nodes[], size_t length) {
     for (size_t i = 0; i < length; i++) {
-        free(child_nodes[i].board);
+        if (child_nodes[i].board != NULL) {
+            free(child_nodes[i].board);
+            child_nodes[i].board = NULL;
+        }
     }
 }
 
 static int nega_alpha_transpose(
-    Board *board, TransposeTables *tables,
+    Board *board, TransposeTables **tables,
     int16_t precomputed_score_matrix[YSIZE][UINT8_MAX], int depth, int alpha,
     int beta, bool is_pass) {
     Validcoords *validcoords;
     uint64_t coords;
-    int max_score = INT_MIN;
+    int max_score = -INT_MAX;
     ChildNode child_nodes[CHILD_NODES_MAX];
     size_t child_nodes_count = 0;
-    char *key = generate_key(board);
-    int score_upper = beta, score_lower = alpha;
+    int score_upper = INT_MAX, score_lower = -INT_MAX;
+    TransposeTables *current_tables = tables[0];
+
+    visited_nodes++;
 
     if (depth == 0) {
         return evaluate(board, precomputed_score_matrix);
     }
 
     // 置換表に値がある場合はそれを用いる
-    if (zhash_exists(tables->upper, key)) {
-        score_upper = *((int *)zhash_get(tables->upper, key));
+    if (hashmap_exist(current_tables->upper, board)) {
+        score_upper = get_score_from_table(current_tables->upper, board);
+        // fprintf(stderr, "nat(): upper cache hit value=%d\n", score_upper);
     }
-    if (zhash_exists(tables->lower, key)) {
-        score_lower = *((int *)zhash_get(tables->lower, key));
+    if (hashmap_exist(current_tables->lower, board)) {
+        score_lower = get_score_from_table(current_tables->lower, board);
+        // fprintf(stderr, "nat(): lower cache hit value=%d\n", score_lower);
     }
 
     if (score_upper == score_lower) {
-        free(key);
+        // fprintf(stderr, "nat(): minimax value found, alpha=%d\n",
+        // score_upper);
         return score_upper;
     }
 
@@ -232,7 +239,6 @@ static int nega_alpha_transpose(
     coords = validcoords->coords;
     // パスの場合
     if (coords == 0) {
-        free(key);
         free(validcoords);
 
         return search_function_process_if_passed(
@@ -256,7 +262,6 @@ static int nega_alpha_transpose(
     for (size_t i = 0; i < child_nodes_count; i++) {
         Board *tmp_board = child_nodes[i].board;
         Validcoords *tmp_validcoords = get_validcoords(tmp_board);
-        char *tmp_key = generate_key(tmp_board);
         int score;
 
         score =
@@ -265,57 +270,62 @@ static int nega_alpha_transpose(
         free(tmp_validcoords);
 
         if (score >= beta) {
+            // fprintf(stderr, "fall high\n");
             if (score > score_lower)
-                regist_score_to_table(tables->lower, tmp_key, score);
+                regist_score_to_table(current_tables->lower, board, score);
             free_child_nodes(child_nodes, child_nodes_count);
             return score;
         }
         alpha = MAX(alpha, score);
         max_score = MAX(max_score, score);
-        free(tmp_key);
     }
-
-    // alloc and set
 
     if (max_score < alpha) {
-        regist_score_to_table(tables->upper, key, max_score);
+        //   fprintf(stderr, "nat(): fall low, alpha=%d\n", alpha);
+        regist_score_to_table(current_tables->upper, board, max_score);
     } else {
-        regist_score_to_table(tables->lower, key, max_score);
-        regist_score_to_table(tables->upper, key, max_score);
+        //    fprintf(stderr, "nat(): minimax value found, alpha=%d\n", alpha);
+        regist_score_to_table(current_tables->lower, board, max_score);
+        regist_score_to_table(current_tables->upper, board, max_score);
     }
 
-    free(key);
     free_child_nodes(child_nodes, child_nodes_count);
 
     return max_score;
 }
 
-static int nega_scout(Board *board, TransposeTables *tables,
+static int nega_scout(Board *board, TransposeTables **tables,
                       int16_t precomputed_score_matrix[YSIZE][UINT8_MAX],
                       int depth, int alpha, int beta, bool is_pass) {
     Validcoords *validcoords;
     uint64_t coords;
     int score;
-    int max_score = INT_MIN;
+    int max_score = -INT_MAX;
     ChildNode child_nodes[CHILD_NODES_MAX];
     size_t child_nodes_count = 0;
+    TransposeTables *current_tables = tables[0];
 
-    int score_upper = alpha, score_lower = beta;
-    char *key = generate_key(board);
+    int score_upper = INT_MAX, score_lower = -INT_MAX;
+
+    visited_nodes++;
 
     if (depth == 0) {
         return evaluate(board, precomputed_score_matrix);
     }
     // 置換表に値がある場合はそれを用いる
-    if (zhash_exists(tables->upper, key)) {
-        score_upper = *((int *)zhash_get(tables->upper, key));
+    if (hashmap_exist(current_tables->upper, board)) {
+        score_upper = get_score_from_table(current_tables->upper, board);
+        //      fprintf(stderr, "ns(): upper cache hit value=%d\n",
+        //      score_upper);
     }
-    if (zhash_exists(tables->lower, key)) {
-        score_lower = *((int *)zhash_get(tables->lower, key));
+    if (hashmap_exist(current_tables->lower, board)) {
+        score_lower = get_score_from_table(current_tables->lower, board);
+        //    fprintf(stderr, "ns(): lower cache hit value=%d\n", score_lower);
     }
 
     if (score_upper == score_lower) {
-        free(key);
+        //     fprintf(stderr, "ns(): minimax value found, alpha=%d\n",
+        //     score_upper);
         return score_upper;
     }
 
@@ -323,7 +333,6 @@ static int nega_scout(Board *board, TransposeTables *tables,
     coords = validcoords->coords;
     // パスの場合
     if (coords == 0) {
-        free(key);
         free(validcoords);
 
         return search_function_process_if_passed(
@@ -339,6 +348,7 @@ static int nega_scout(Board *board, TransposeTables *tables,
     child_nodes_count = enumerate_nodes(board, validcoords, child_nodes, tables,
                                         precomputed_score_matrix,
                                         store_board_and_ordering_value);
+    free(validcoords);
 
     qsort(child_nodes, child_nodes_count, sizeof(ChildNode),
           compare_child_node);
@@ -347,10 +357,9 @@ static int nega_scout(Board *board, TransposeTables *tables,
     score = -nega_scout(child_nodes[0].board, tables, precomputed_score_matrix,
                         depth - 1, -beta, -alpha, false);
     if (score >= beta) {
+        //        fprintf(stderr, "fall high\n");
         if (score > score_lower)
-            regist_score_to_table(tables->lower, key, score);
-        free(validcoords);
-        free(key);
+            regist_score_to_table(current_tables->lower, board, score);
         free_child_nodes(child_nodes, child_nodes_count);
         return score;
     }
@@ -360,17 +369,12 @@ static int nega_scout(Board *board, TransposeTables *tables,
 
     // 残りの候補を Null Window Search で探索
     for (size_t i = 1; i < child_nodes_count; i++) {
-        char *tmp_key = generate_key(child_nodes[i].board);
-
         score = -nega_alpha_transpose(child_nodes[i].board, tables,
                                       precomputed_score_matrix, depth - 1,
                                       -alpha - 1, -alpha, false);
         if (score >= beta) {
             if (score > score_lower)
-                regist_score_to_table(tables->lower, tmp_key, score);
-            free(validcoords);
-            free(tmp_key);
-            free(key);
+                regist_score_to_table(current_tables->lower, board, score);
             free_child_nodes(child_nodes, child_nodes_count);
             return score;
         }
@@ -382,62 +386,86 @@ static int nega_scout(Board *board, TransposeTables *tables,
                                 -alpha, false);
             if (score >= beta) {
                 if (score > score_lower)
-                    regist_score_to_table(tables->lower, tmp_key, score);
-                free(validcoords);
-                free(tmp_key);
-                free(key);
+                    regist_score_to_table(current_tables->lower, board, score);
+                free_child_nodes(child_nodes, child_nodes_count);
                 return score;
             }
         }
         alpha = MAX(alpha, score);
         max_score = MAX(max_score, score);
-        free(tmp_key);
     }
     if (max_score < alpha) {
-        regist_score_to_table(tables->upper, key, max_score);
+        //   fprintf(stderr, "ns(): fall low, alpha=%d\n", alpha);
+        regist_score_to_table(current_tables->lower, board, max_score);
     } else {
-        regist_score_to_table(tables->lower, key, max_score);
-        regist_score_to_table(tables->upper, key, max_score);
+        // fprintf(stderr, "ns(): minimax value found, alpha=%d\n", alpha);
+        regist_score_to_table(current_tables->lower, board, max_score);
+        regist_score_to_table(current_tables->upper, board, max_score);
     }
-    free(validcoords);
-    free(key);
     free_child_nodes(child_nodes, child_nodes_count);
     return max_score;
 }
 
-TransposeTables *update_new_tables(TransposeTables *prev) {
-    TransposeTables *tables =
-        (TransposeTables *)malloc(sizeof(TransposeTables));
-    if (prev != NULL) {
-        free_tables(prev->prev);
-        prev->prev = NULL;
+static void clear_tables(TransposeTables *tables) {
+    if (tables == NULL) return;
+    hashmap_clear(tables->upper);
+    hashmap_clear(tables->lower);
+}
+static void free_tables(TransposeTables **tables) {
+    if (tables == NULL) return;
+    for (size_t i = 0; i < 2; i++) {
+        hashmap_destroy(tables[i]->upper);
+        hashmap_destroy(tables[i]->lower);
+        free(tables[i]);
     }
-    tables->prev = prev;
-    tables->upper = zcreate_hash_table();
-    tables->lower = zcreate_hash_table();
+    free(tables);
+}
+
+static TransposeTables **create_new_tables(void) {
+    TransposeTables **tables;
+
+    tables = (TransposeTables **)malloc(sizeof(TransposeTables *) * 2);
+
+    if (tables == NULL) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+
+    tables[0] = (TransposeTables *)malloc(sizeof(TransposeTables));
+    tables[1] = (TransposeTables *)malloc(sizeof(TransposeTables));
+
+    if ((tables[0] == NULL) || (tables[1] == NULL)) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+    for (size_t i = 0; i < 2; i++) {
+        tables[i]->upper = hashmap_create();
+        tables[i]->lower = hashmap_create();
+    }
 
     return tables;
 }
 
-void free_tables(TransposeTables *tables) {
-    if (tables == NULL) return;
-    if (tables->prev != NULL) free_tables(tables->prev);
-    zfree_hash_table(tables->upper);
-    zfree_hash_table(tables->lower);
-    free(tables);
+static void swap_tables(TransposeTables **tables) {
+    TransposeTables *tmp = tables[0];
+
+    tables[0] = tables[1];
+    tables[1] = tmp;
 }
 
 uint64_t search(Board *board, Validcoords *validcoords,
                 int16_t precompute_score_matrix[YSIZE][UINT8_MAX],
                 size_t depth) {
-    TransposeTables *tables = update_new_tables(NULL);
+    visited_nodes = 0;
+    TransposeTables **tables;
     uint64_t max_coord = 0;
     ChildNode child_nodes[CHILD_NODES_MAX];
     size_t child_nodes_count = 0;
     int alpha = -INT_MAX;
     int beta = INT_MAX;
     size_t start_depth = MAX(1, depth - 3);
-    char *key = generate_key(board);
+
+    tables = create_new_tables();
 
     child_nodes_count =
         enumerate_nodes(board, validcoords, child_nodes, tables,
@@ -449,11 +477,8 @@ uint64_t search(Board *board, Validcoords *validcoords,
         alpha = -INT_MAX;
         beta = INT_MAX;
         for (size_t i = 0; i < child_nodes_count; ++i) {
-            char *tmp_key = generate_key(child_nodes[i].board);
-
             child_nodes[i].move_ordering_value = calulate_move_ordering_value(
-                tables, tmp_key, child_nodes[i].board, precompute_score_matrix);
-            free(tmp_key);
+                tables, child_nodes[i].board, precompute_score_matrix);
         }
         qsort(child_nodes, child_nodes_count, sizeof(ChildNode),
               compare_child_node);
@@ -480,10 +505,12 @@ uint64_t search(Board *board, Validcoords *validcoords,
             }
             alpha = MAX(alpha, score);
         }
-        update_new_tables(tables);
+        fprintf(stderr, "depth: %zu, nodes: %llu\n", search_depth,
+                visited_nodes);
+        clear_tables(tables[1]);
+        swap_tables(tables);
     }
     free_tables(tables);
-    free(key);
     free_child_nodes(child_nodes, child_nodes_count);
 
     return max_coord;
