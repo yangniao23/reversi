@@ -10,8 +10,5 @@
 8g #右下
 ```
 
-## ライブラリ
-ハッシュマップに [zhash-c](https://github.com/zfletch/zhash-c) (MIT License)を使用しています．
-
 ## ライセンス
 このプログラムは Apache 2.0 license の下公開されています．
