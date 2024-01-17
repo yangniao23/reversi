@@ -13,16 +13,57 @@
 #define DEPTH 10
 
 typedef struct {
-    Board *board;
-    uint64_t put;
-    bool skip_flag;
-    bool end_game_flag;
-} Input_Result;
+    bool black_auto_flag;
+    bool white_auto_flag;
+} Auto_Flags;
 
-static void init(Board *board) {
+static void init_board(Board *board) {
     board->mode = BLACK;
     board->black = 0x0000000810000000;
     board->white = 0x0000001008000000;
+}
+
+static Auto_Flags *get_playing_mode(void) {
+    char buf[BUFSIZE];
+    Auto_Flags *auto_flags;
+
+    if ((fgets(buf, sizeof(buf), stdin)) == NULL) {
+        fprintf(stderr, "fgets() failed.\n");
+        return NULL;
+    }
+    if ((auto_flags = (Auto_Flags *)malloc(sizeof(Auto_Flags))) == NULL) {
+        fprintf(stderr, "malloc() failed.\n");
+        return NULL;
+    }
+    if (strlen(buf) < 2) {
+        fprintf(stderr, "invalid input.\n");
+        free(auto_flags);
+        return NULL;
+    }
+
+    switch (buf[0]) {
+        case '0':
+            auto_flags->black_auto_flag = false;
+            auto_flags->white_auto_flag = false;
+            break;
+        case '1':
+            auto_flags->black_auto_flag = true;
+            auto_flags->white_auto_flag = false;
+            break;
+        case '2':
+            auto_flags->black_auto_flag = false;
+            auto_flags->white_auto_flag = true;
+            break;
+        case '3':
+            auto_flags->black_auto_flag = true;
+            auto_flags->white_auto_flag = true;
+            break;
+        default:
+            fprintf(stderr, "invalid input.\n");
+            free(auto_flags);
+            return NULL;
+    }
+    return auto_flags;
 }
 
 static Input_Result *generate_result(Input_Result *result, Board *board,
@@ -162,12 +203,26 @@ int main(void) {
     Input_Result results[64 + 1] = {0};  // 最初の結果を results[1] とする
     int16_t prepared_score_matrix[YSIZE][UINT8_MAX];
     size_t i = 1;
+    Auto_Flags *auto_flags = NULL;
     precompute_score_matrix(prepared_score_matrix,
                             (int8_t(*)[XSIZE])SCORE_MATRIX);
 
-    init(&board);
+    init_board(&board);
+
+    do {
+        printf("select playing mode\n");
+        printf("0: player(black) vs player(white)\n");
+        printf("1: cpu(black) vs player(white)\n");
+        printf("2: player(black) vs cpu(white)\n");
+        printf("3: cpu(black) vs cpu(white)\n");
+        printf(">> ");
+    } while ((auto_flags = get_playing_mode()) == NULL);
+
+    flush();
+
     while (1) {
-        i = make_move(results, i, &board, prepared_score_matrix, true, false);
+        i = make_move(results, i, &board, prepared_score_matrix,
+                      auto_flags->black_auto_flag, auto_flags->white_auto_flag);
         if (i == 0) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
@@ -177,7 +232,8 @@ int main(void) {
         board.mode *= -1;
         flush();
 
-        i = make_move(results, i, &board, prepared_score_matrix, false, true);
+        i = make_move(results, i, &board, prepared_score_matrix,
+                      auto_flags->white_auto_flag, auto_flags->black_auto_flag);
         if (i == 0) {
             fprintf(stderr, "make_move() failed.\n");
             return -1;
@@ -189,4 +245,11 @@ int main(void) {
     }
 
     show_winner(&board);
+    /*
+        printf("would you like to save the game? (y/n)\n");
+        if (getchar() == 'y') {
+            save_game(results, i);
+        }
+    */
+    free(auto_flags);
 }
