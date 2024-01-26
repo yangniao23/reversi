@@ -1,8 +1,4 @@
-CMakeFiles/
-build/
-cmake_install.cmake
-CMakeCache.txt
-Makefile
-CTestTestfile.cmake
 *.out
 *.csv
+*.o
+*.exe
