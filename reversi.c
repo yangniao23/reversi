@@ -245,11 +245,5 @@ int main(void) {
     }
 
     show_winner(&board);
-    /*
-        printf("would you like to save the game? (y/n)\n");
-        if (getchar() == 'y') {
-            save_game(results, i);
-        }
-    */
     free(auto_flags);
 }
