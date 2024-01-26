@@ -62,7 +62,6 @@ Validcoords *get_validcoords(Board *board) {
             tmp |= mask & LEFT_SHIFT(tmp, directions[i]);
         }
         validcoords->reverse_stones[i] = tmp;
-        // dump_coords(blank & LEFT_SHIFT(tmp, directions[i]));
 
         validcoords->coords |= blank & LEFT_SHIFT(tmp, directions[i]);
     }
